@@ -1,0 +1,252 @@
+# rn-upgrade
+upgrade react-native from 0.59.10 to 0.62.2
+參考文件：
+    官方 diff : https://react-native-community.github.io/upgrade-helper/?from=0.59.10&to=0.62.2
+
+新建 App : /Users/edemchen/CS/Lab/Upgrade/App56
+    $ react-native init App56 --version 0.59.10
+
+================> 先針對 Android, iOS 先不動
+    --> 前置作業:
+            $ npm install 
+            $ react-native run-Android
+            $ git init
+            $ git add .
+            $ git commit "init App run well"
+
+    --> 把 Android Studio 從 3.5.1 升到 3.6.3
+        in Windows : 去官網下載安裝，過程中會讓你選擇對舊版有多少保留。
+        in Mac : Menu 左上角 "Android Studio" > "Check for Updates..." (此時硬碟剩 8.5G)
+                按 "Update and Restart"
+        做好設定，restart 之後，這裡提示有錯誤，找不到 package，但 sync gradle 之後，就好了，此時硬碟剩 6.4G
+            import com.android.build.OutputFile
+        試跑二個 App 都順利。
+
+    --> 參考官方 diff : 逐檔 patch (後半部 iOS 先不管)，以下各檔若無特別注意事項，不另加說明
+
+        01. package.json : 
+            "@babel/core": "^7.9.6", 高於它要的 7.6.2，不改
+            "@babel/runtime": "^7.9.6", 高於它要的 7.6.2，不改
+            "babel-jest": "^26.0.1", 高於它要的 24.9.0，不改
+            "jest": "^26.0.1", 高於它要的 24.9.0，不改
+            "metro-react-native-babel-preset": "^0.59.0", 高於它要的 0.58.0，不改
+
+        02. .gitattributes 
+            依指示要新增，但已經存在，用 vi 開啟，內容如下：
+            *.pbxproj -text
+            再把要新增的補上去：
+            # specific for windows script files
+            *.bat text eol=crlf
+
+        03. .eslintrc.js 新增隱藏檔
+
+        04. .flowconfig 修改隱藏檔 (改很多，從尾巴開始改，比較好對行號，很複雜耗時)
+        
+        05. .gitignore 修改隱藏檔
+            # CocoaPods
+            /ios/Pods/
+            我改成 (我覺得這樣才對)
+            # CocoaPods
+            ios/Pods/
+
+        06. .prettierrc.js 新增隱藏檔
+
+        07. App.js 略過，不必理它。
+        
+        ----------- 接下來進入 android Native 部分，開 Android Studio 進行編輯 ------------
+
+        08. android/app/BUCK 改名成 _BUCK
+
+        09. android/app/build.gradle 要改很多，從尾巴開始改起。 非常耗時
+
+        10. android/app/debug.keystore 網頁右邊有下載連結，下載 debug.keystore 後放到 android/app/
+
+        11. android/app/proguard-rules.pre 只是刪除幾行註解，不理它，略過。
+
+        12. android/app/src/debug/java/com/rndiffapp/ReactNativeFlipper.java 新增檔案, 進入右邊的 View file，copy 內容貼上
+            路徑裡的"rndiffapp"代換成AppName，因為 rn 是小寫，所以在本例中就是"app56", 如果大寫 "RnDiffApp"，就要大寫 "App56" (參考 14 MainActivity.java 的回傳值)
+            這幾個 folder 不存在，要自己建 
+                java/com/app56
+            最後檔案在此：
+                /Users/edemchen/CS/Lab/Upgrade/App56/android/app/src/debug/java/com/app56/ReactNativeFlipper.java
+
+        13. android/app/src/main/AndroidManifest.xml 修改
+
+        14. android/app/src/main/java/com/rndiffapp/MainActivity.java   只是動到排版，略過
+
+        15. android/app/src/main/java/com/rndiffapp/MainApplication.java --> 從尾巴改回來。
+
+        16. android/app/src/main/res/values/styles.xml
+
+        17. android/build.gradle
+
+        18. android/gradle.properties
+
+        19. android/gradle/wrapper/gradle-wrapper.properties
+
+        20. android/gradlew
+
+        21. android/gradlew.bat 看起來是全取代了，進 View file 複製貼上，實際案例要確認是否全取代。
+
+        22. android/keystores/BUCK 刪除
+
+        23. android/keystores/debug.keystore.properties 刪除
+
+        24. android/settings.gradle 這裡可以觀察到駝峰式"RnDiffApp"就代表駝峰式AppName : "App56"，如果全小寫"rndiffapp"，就是全小寫appname : "app56"
+
+    --> 先執行 npm install 再回 AS 進行 sync 
+            AS提示找不到 : (但 sync successful)
+                import com.facebook.react.PackageList;
+            然而 react-native run-android 跑起來就不再提示錯誤了。
+
+    --> 試跑看看：
+            $ react-native run-android 成功跑起來了
+            $ git add .
+            $ git commit -m "Android upgrade from 0.59.10 to 0.62.2 success"
+
+        ----------- Android 部分 Patch 完成，接下來要 patch ios 部分，可以先把 AS 關了，很佔記憶體 ------------
+
+
+        25. ios/Podfile 手動新增
+            注意：檔案中有多個 "RnDiffApp" 要改成真正的AppName : "App56"
+
+        26. ios/RnDiffApp-tvOS/Info.plist 這是針對 TV 的，先略過吧。
+
+ ==>        27. ios/RnDiffApp.xcodeproj/project.pbxproj 依指示，要等其他檔案都 patch 完畢，再來處理，先欠著
+
+        28. ios/RnDiffApp.xcodeproj/xcshareddata/xcschemes/RnDiffApp-tvOS.xcscheme 這是 TV，先略過
+
+        29. ios/RnDiffApp.xcodeproj/xcshareddata/xcschemes/RnDiffApp.xcscheme
+            對應到
+            ios/App56.xcodeproj/xcshareddata/xcschemes/App56.xcscheme
+
+        30. ios/RnDiffApp.xcworkspace/contents.xcworkspacedata 新增檔案
+                App56.xcworkspace 資料夾不存在，自己建
+                從 View file 複製貼上，
+            注意，檔案內容的 "RnDiffApp" 要改成真正的 AppName : "App56"
+                無法從 Visual Code 存檔到 ios/App56.xcworkspace/，先存到 ios/ 再從 console 手動 mv 
+
+        31. ios/RnDiffApp/AppDelegate.h 只是刪除幾行註解，不理它，略過。
+
+        32. ios/RnDiffApp/AppDelegate.m 前面刪註解不必理會，後面有兩段要插入程式碼
+            對應到 ios/App56/AppDelegate.m
+
+        33. ios/RnDiffApp/Info.plist 對應到 ios/App56/Info.plist
+
+        34. ios/RnDiffApp/main.m 刪註解而已，不必理會，略過。
+
+        35. ios/RnDiffAppTests/RnDiffAppTests.m
+            對應到 
+            ios/App56Tests/App56Tests.m
+
+    ==> 27. ios/RnDiffApp.xcodeproj/project.pbxproj
+        --> ios/App56.xcodeproj/project.pbxproj
+            實在太複雜了，先略過，而且我是從 workspace 啟動，這個應該用不到
+            --> 後來我在 git diff 發現，只要安裝或移除 Library, 這個檔案都會被改到，恐怕沒那麼簡單
+            --> 還是乖乖 patch 吧，太長了，一定要從尾巴開始 patch，循行號比較方便。
+            --> 注意 RnDiffApp 要代換成真正的 AppName : "App56"
+            
+======> 直接試跑看看    --------------------------------------------------------------------------------------------------------
+
+--> 安裝 package :
+
+    確定 Xcode 未執行
+    $ cd ios
+    $ pod install
+    --> install 結果
+    Pod installation complete! There are 47 dependencies from the Podfile and 37 total pods installed.
+
+    [!] The `App56Tests [Debug]` target overrides the `OTHER_LDFLAGS` build setting defined in `Pods/Target Support Files/Pods-App56-App56Tests/Pods-App56-App56Tests.debug.xcconfig'. This can lead to problems with the CocoaPods installation
+        - Use the `$(inherited)` flag, or
+        - Remove the build settings from the target.
+
+    [!] The `App56Tests [Release]` target overrides the `OTHER_LDFLAGS` build setting defined in `Pods/Target Support Files/Pods-App56-App56Tests/Pods-App56-App56Tests.release.xcconfig'. This can lead to problems with the CocoaPods installation
+        - Use the `$(inherited)` flag, or
+        - Remove the build settings from the target.
+
+--> 執行:
+
+    以 Xcode 開啟 App56/ios/App56.xcworkspace
+    TARGETS : App56 和 App56Tests 都必須在 "Signing & Capabilities" 把 Team 設定成 "<我們公司的 Certification>"
+
+    執行...........................................................
+
+    --> 老老實實把 ios/RnDiffApp.xcodeproj/project.pbxproj 從尾到頭好好 patch，以下問題都沒了 ==> Success 
+
+==> 以下是偷懶，略過 ios/RnDiffApp.xcodeproj/project.pbxproj 才產生的錯誤及解法，但解不完，所以後來乖乖回去 patch
+
+    --> Error : 'React/RCTBridgeDelegate.h' file not found (AppDelegate.h)
+        --> 偏方 : (先關閉 Xcode)
+            cd ios
+            pod deintegrate
+            pod install 
+            重開 Xcode , 還是一樣
+        --> 解法 :
+            Menu > Product > Scheme > Manage Schemes...
+            按左下角的'＋'，在 Target 欄下拉至 'React'，按 OK，按 Close
+
+    --> Error : 在 AppDelegate.m 這一段出錯了 --> Use of undeclared identifier 'FlipperClient'
+        #if DEBUG
+            #import <FlipperKit/FlipperClient.h>
+            #import <FlipperKitLayoutPlugin/FlipperKitLayoutPlugin.h>
+            #import <FlipperKitUserDefaultsPlugin/FKUserDefaultsPlugin.h>
+            #import <FlipperKitNetworkPlugin/FlipperKitNetworkPlugin.h>
+            #import <SKIOSNetworkPlugin/SKIOSNetworkAdapter.h>
+            #import <FlipperKitReactPlugin/FlipperKitReactPlugin.h>
+            static void InitializeFlipper(UIApplication *application) {
+                FlipperClient *client = [FlipperClient sharedClient];
+                SKDescriptorMapper *layoutDescriptorMapper = [[SKDescriptorMapper alloc] initWithDefaults];
+                [client addPlugin:[[FlipperKitLayoutPlugin alloc] initWithRootNode:application withDescriptorMapper:layoutDescriptorMapper]];
+                [client addPlugin:[[FKUserDefaultsPlugin alloc] initWithSuiteName:nil]];
+                [client addPlugin:[FlipperKitReactPlugin new]];
+                [client addPlugin:[[FlipperKitNetworkPlugin alloc] initWithNetworkAdapter:[SKIOSNetworkAdapter new]]];
+                [client start];
+            }
+        #endif
+
+        --> 這位仁兄和我一樣是升級 RN 遭遇到的 : https://github.com/react-native-community/upgrade-support/issues/24
+        --> 解法 :
+            Go to Build Settings
+            Find Preprocessor Macros
+            To Debug add new value:
+            FB_SONARKIT_ENABLED=1
+
+    --> Error : Library not found for -lRCTBlob
+        --> 這位仁兄也是升級 RN 遭遇相同錯誤，但無人回覆 : https://stackoom.com/question/3wN3E/%E4%BB%8ERN-%E5%8D%87%E7%BA%A7%E5%88%B0-%E5%BC%95%E5%8F%91ld-lReact%E6%89%BE%E4%B8%8D%E5%88%B0%E5%BA%93
+        --> 這位也是 : https://github.com/facebook/react-native/issues/28483
+            --> 照做，沒用 (Library Search Paths 改了，File-> Workspace Settings -> Build System -> "New Build System" 也改了)
+        --> 這條路也走過了，明明有安裝
+$(inherited) "${PODS_CONFIGURATION_BUILD_DIR}/CocoaAsyncSocket" "${PODS_CONFIGURATION_BUILD_DIR}/DoubleConversion" "${PODS_CONFIGURATION_BUILD_DIR}/FBReactNativeSpec" "${PODS_CONFIGURATION_BUILD_DIR}/Flipper" "${PODS_CONFIGURATION_BUILD_DIR}/Flipper-DoubleConversion" "${PODS_CONFIGURATION_BUILD_DIR}/Flipper-Folly" "${PODS_CONFIGURATION_BUILD_DIR}/Flipper-Glog" "${PODS_CONFIGURATION_BUILD_DIR}/Flipper-PeerTalk" "${PODS_CONFIGURATION_BUILD_DIR}/Flipper-RSocket" "${PODS_CONFIGURATION_BUILD_DIR}/FlipperKit" "${PODS_CONFIGURATION_BUILD_DIR}/Folly" "${PODS_CONFIGURATION_BUILD_DIR}/RCTTypeSafety" "${PODS_CONFIGURATION_BUILD_DIR}/React-Core" "${PODS_CONFIGURATION_BUILD_DIR}/React-CoreModules" "${PODS_CONFIGURATION_BUILD_DIR}/React-RCTAnimation" "${PODS_CONFIGURATION_BUILD_DIR}/React-RCTBlob" "${PODS_CONFIGURATION_BUILD_DIR}/React-RCTImage" "${PODS_CONFIGURATION_BUILD_DIR}/React-RCTLinking" "${PODS_CONFIGURATION_BUILD_DIR}/React-RCTNetwork" "${PODS_CONFIGURATION_BUILD_DIR}/React-RCTSettings" "${PODS_CONFIGURATION_BUILD_DIR}/React-RCTText" "${PODS_CONFIGURATION_BUILD_DIR}/React-RCTVibration" "${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact" "${PODS_CONFIGURATION_BUILD_DIR}/React-jsi" "${PODS_CONFIGURATION_BUILD_DIR}/React-jsiexecutor" "${PODS_CONFIGURATION_BUILD_DIR}/React-jsinspector" "${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon" "${PODS_CONFIGURATION_BUILD_DIR}/Yoga" "${PODS_CONFIGURATION_BUILD_DIR}/YogaKit" "${PODS_CONFIGURATION_BUILD_DIR}/glog" "${PODS_ROOT}/CocoaLibEvent/lib" "${PODS_ROOT}/OpenSSL-Universal/ios/lib"
+$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME) 
+
+    ------------------------------- 歹路嘸湯行 ----------------------------
+    註解掉，這一段也錯了 :
+
+    #if DEBUG
+        InitializeFlipper(application);
+    #endif
+
+    註解後，又錯 :
+    library not found for -lRCTBlob
+
+    想到 patch  ios/RnDiffApp.xcodeproj/project.pbxproj 時看到說明連結提示:
+        在 Xcode 
+            App56
+                Libraries 底下的 Library 如果有支援 CocoaPods 的，都已經歸 CocoaPods 管理
+                在 Libraries 底下的可以直接刪除，所以有錯誤找不到的，我就逐一直接刪了。
+                ==> 全砍完還是錯。
+
+    ios/Pods/OpenSSL-Universal/ios/lib/libcrypto.a(bio_lib.o)' does not contain bitcode. You must rebuild it with bitcode enabled (Xcode setting ENABLE_BITCODE), obtain an updated library from the vendor, or disable bitcode for this target. for architecture arm64
+
+    --> in Xcode，左邊選 Project Name (即 App56)，右邊選 Build Setting (在 info 右邊)，再選 "All" 分頁，搜尋 "bitcode"
+        將 "Enable Bitcode" 設為 No 
+
+    又出現十幾個 Undefined symbol 的 Error
+
+    慘了，可能是剛剛亂砍 Library 害的。
+    憑印象去 Link Binary With Libraries 加也加不回來，沒救了.
+
+    利用 git 把剛剛的改動還原，總算回復原狀 ........... 
+
+    -----------------------------------------------------------------------------------------
+
